@@ -13,9 +13,11 @@
 ///  Modification History: See Git
 ///  Program status: In Progress
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+// Pin Defines
 #define phPin A0
 #define tempPin A1
 
+// Main Includes
 #include <Arduino.h>
 #include <SPI.h>
 #include "LCD_Driver.h"
@@ -24,10 +26,19 @@
 #include "string.h"
 #include <SoftwareSerial.h>
 
+// C libraries
 extern "C"{
 #include "switch.h"
 #include "phSens.h"
 }
+
+// states for the LCD
+typedef enum {
+  Stats,
+  Internet,
+  Pump,
+  Num
+} State;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Local Prototypes
@@ -36,6 +47,18 @@ extern "C"{
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Global Variables
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+State state;         // Will store the state of the LCD screen
+SwState D2, D3, D4;  // Switch states for the buttons controlling the LCD
+
+// char arrays for LCD Strings
+unsigned char pHBuff[40];
+unsigned char tempBuff[40];
+unsigned char levelBuff[40];
+
+// char arrays for the packets to be sent to the ESP
+unsigned char pHPacket[6];
+unsigned char tempPacket[6];
+unsigned char levelPacket[3];
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Constants
@@ -45,8 +68,20 @@ extern "C"{
 // one-time initializations
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void setup() {
-  
+  // Setup for the LCD
+  Config_Init();
+  LCD_Init();
+  LCD_Clear(0xffff);
+  Paint_NewImage(LCD_WIDTH, LCD_HEIGHT, 0, WHITE);
+  Paint_Clear(WHITE);
 
+  state = Stats; // start the program on the stats screen
+  SwState D2, D3, D4 = Idle;  // start the buttons in Idle
+
+  // Set the pins for the buttons to input
+  pinMode(2, INPUT);
+  pinMode(3, INPUT);
+  pinMode(4, INPUT);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
