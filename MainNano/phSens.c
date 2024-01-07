@@ -58,14 +58,14 @@ void GetLevel(int level, char *levelBuff, char *levelPacket)
 {
     if (level)
     {
-        (void)sprintf(levelBuff, "Level: Good");
+        (void)sprintf(levelBuff, "Level: Low");
     }
     else
     {
-        (void)sprintf(levelBuff, "Level: Low");
+        (void)sprintf(levelBuff, "Level: Good");
     }
 
-    (void)sprintf(levelPacket, "3 %d", level);
+    (void)sprintf(levelPacket, "3 %d", ~level);
 }
 
 // read the pin running the pump and create a string for the LCD
