@@ -52,8 +52,8 @@ SwState D2, D3, D4;  // Switch states for the buttons controlling the LCD
 
 // char arrays for LCD Strings
 unsigned char pHBuff[40];
-unsigned char tempBuff[40];
-unsigned char levelBuff[40];
+unsigned char tempBuff[40] = "a"; // these two needed to be initialized???
+unsigned char levelBuff[40] = "a";
 
 // char arrays for the packets to be sent to the ESP
 unsigned char pHPacket[7];
@@ -82,14 +82,25 @@ void setup() {
   pinMode(2, INPUT);
   pinMode(3, INPUT);
   pinMode(4, INPUT);
+
+  // Serial set up
+  Serial.begin(115200);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // main program loop
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void loop() {
-  
+  // Read from the Sensors
+  GetPH(511, pHBuff, pHPacket);
+  GetTemp(511, tempBuff, tempPacket);
+  GetLevel(1, levelBuff, levelPacket);
 
+  Paint_DrawRectangle(2 , 2, LCD_WIDTH -2, LCD_HEIGHT - 2, BLACK, 1, 0);
+  Paint_DrawString_EN(30, 10, pHBuff, &Font24, WHITE, 0x8813);
+  Paint_DrawString_EN(30, 40, tempBuff, &Font24, WHITE, 0x8813);
+  Paint_DrawString_EN(30, 70, levelBuff, &Font24, WHITE, 0x8813);
+  Paint_DrawString_EN(30, 100, "Pump: Runnning", &Font24, WHITE, 0x8813);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
