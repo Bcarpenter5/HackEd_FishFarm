@@ -22,7 +22,7 @@ void GetPH(int voltage, char *pHBuff, char *pHPacket)
     fPH = ((float)voltage / 1023.0) * 14.0;
     iPH = (int)(fPH * 100.0);
     (void)sprintf(pHBuff, "pH: %d.%d", iPH / 100, iPH % 100);
-    (void)sprintf(pHPacket, "1 %d", iPH);
+    (void)sprintf(pHPacket, "1 %d\n", iPH);
 }
 
 // takes in a range of 0 to 1023 from an analog pin on the arduino then 
@@ -40,7 +40,7 @@ void GetTemp(int voltage, char *tempBuff, char *tempPacket)
     fTemp = ((float)voltage / 1023.0) * gain + 15.0;
     iTemp = (int)(fTemp * 100.0);
     (void)sprintf(tempBuff, "Temp: %d.%dC", iTemp / 100, iTemp % 100);
-    (void)sprintf(tempPacket, "2 %d", iTemp);
+    (void)sprintf(tempPacket, "2 %d\n", iTemp);
 }
 
 // takes in a digital read 0 or 1, then creates a packet to send over
@@ -55,5 +55,5 @@ void GetLevel(int level, char *levelBuff, char *levelPacket)
         (void)sprintf(levelBuff, "Level: Low");
     }
 
-    (void)sprintf(levelPacket, "3 %d", level);
+    (void)sprintf(levelPacket, "3 %d\n", level);
 }
