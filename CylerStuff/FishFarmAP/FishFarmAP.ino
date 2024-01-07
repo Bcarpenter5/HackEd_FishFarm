@@ -39,8 +39,8 @@ void setup() {
   server.on("/getInitialData", HTTP_GET, handleGetInitialData);
   server.on("/storeNumber", HTTP_GET, handleStoreNumber);
   server.on("/getSensorData", HTTP_GET, handleGetSensorData);
-  server.on("/pumpOn", HTTP_POST, handlePumpOn);
-  server.on("/pumpOff", HTTP_POST, handlePumpOff);
+  server.on("/pumpOn", HTTP_GET, handlePumpOn);
+  server.on("/pumpOff", HTTP_GET, handlePumpOff);
   server.onNotFound(handle_NotFound);
 
   server.begin();
@@ -55,6 +55,7 @@ void loop() {
 void CheckUART() {
   if(Serial2.available() > 0) {
     data = Serial2.readString();
+    Serial.println(data);
     lastIndex = 0;
     
     for(uint i = 0; i < data.length(); i++) {
@@ -350,21 +351,12 @@ String getHTML(){
   htmlCode += "                xhr.send();\n";
   htmlCode += "            }\n";
   htmlCode += "\n";
-  htmlCode += "            function PumpBtnCheck(){\n";
-  htmlCode += "                if(pumpFlag == 1){\n";
-  htmlCode += "                    document.getElementById('pumpBtn').innerHTML = 'TURN OFF';\n";
-  htmlCode += "                }\n";
-  htmlCode += "                else{\n";
-  htmlCode += "                    document.getElementById('pumpBtn').innerHTML = 'TURN ON';\n";
-  htmlCode += "                }\n";
-  htmlCode += "            }\n";
-  htmlCode += "\n";
   htmlCode += "            function PumpHandler(){ // THIS FUNCTION NEEDS TO BE MODIFIED TO HAVE LOGIC TO CHOOSE WHETHER TO TURN ON OR OFF\n";
   htmlCode += "                if(pumpFlag == 1){\n";
   htmlCode += "                    pumpFlag = 0;\n";
   htmlCode += "                    // Create an XMLHttpRequest object to turn the pump on\n";
   htmlCode += "                    var xhr = new XMLHttpRequest();\n";
-  htmlCode += "                    xhr.open('POST', '/pumpOff', true);\n";
+  htmlCode += "                    xhr.open('GET', '/pumpOff', true);\n";
   htmlCode += "                    xhr.send();\n";
   htmlCode += "                }\n";
   htmlCode += "                else{\n";
@@ -372,7 +364,7 @@ String getHTML(){
   htmlCode += "\n";
   htmlCode += "                    // Create an XMLHttpRequest object to turn the pump on\n";
   htmlCode += "                    var xhr = new XMLHttpRequest();\n";
-  htmlCode += "                    xhr.open('POST', '/pumpOn', true);\n";
+  htmlCode += "                    xhr.open('GET', '/pumpOn', true);\n";
   htmlCode += "                    xhr.send();\n";
   htmlCode += "                }\n";
   htmlCode += "                PumpBtnCheck();\n";
@@ -445,12 +437,14 @@ void handlePumpOn(){
   //UART CODE TO SEND PUMP ON MESSAGE TO NANO
   Serial2.println("4 1");
   Serial.println("Turning pump on...");
+  server.send(200, "text/plain", "Pump operation successful");
 }
 
 void handlePumpOff(){
   //UART CODE TO SEND PUMP OFF MESAGE TO NANO
   Serial2.println("4 0");
   Serial.println("Turning pump off...");
+  server.send(200, "text/plain", "Pump operation successful");
 }
 
 void handle_NotFound(){
