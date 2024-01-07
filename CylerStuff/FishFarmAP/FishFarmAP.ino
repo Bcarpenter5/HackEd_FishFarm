@@ -166,8 +166,8 @@ String getHTML(){
   htmlCode += "                    // data is ready to be used\n";
   htmlCode += "                    var data = JSON.parse(xhr.responseText);\n";
   htmlCode += "                    console.log(data);\n";
-  htmlCode += "                    document.getElementById('tempDsp').innerHTML = data.heat;\n";
-  htmlCode += "                    document.getElementById('phDsp').innerHTML = data.pH;\n";
+  htmlCode += "                    document.getElementById('tempDsp').innerHTML = data.heat.toFixed(2);\n";
+  htmlCode += "                    document.getElementById('phDsp').innerHTML = data.pH.toFixed(2);\n";
   htmlCode += "\n";
   htmlCode += "                    if(data.waterLevel == 0){\n";
   htmlCode += "                        document.getElementById('lvlDsp').innerHTML = 'Low';\n";
@@ -202,11 +202,11 @@ String getHTML(){
   htmlCode += "\n";
   htmlCode += "                    var tempProg = document.getElementById('tempProg');\n";
   htmlCode += "                    tempProg.max = HeatMax - HeatMin;\n";
-  htmlCode += "                    tempProg.value = data.heat - HeatMin;\n";
+  htmlCode += "                    tempProg.value = data.heat.toFixed(2) - HeatMin;\n";
   htmlCode += "\n";
   htmlCode += "                    var phProg = document.getElementById('phProg');\n";
   htmlCode += "                    phProg.max = PHMax - PHMin;\n";
-  htmlCode += "                    phProg.value = data.pH - PHMin;\n";
+  htmlCode += "                    phProg.value = data.pH.toFixed(2) - PHMin;\n";
   htmlCode += "                }\n";
   htmlCode += "            };\n";
   htmlCode += "            xhr.send();\n";
@@ -224,8 +224,8 @@ String getHTML(){
   htmlCode += "                if(xhr.readyState == 4 && xhr.status == 200){\n";
   htmlCode += "                    // data is ready to be used\n";
   htmlCode += "                    var data = JSON.parse(xhr.responseText);\n";
-  htmlCode += "                    document.getElementById('tempDsp').innerHTML = data.heat;\n";
-  htmlCode += "                    document.getElementById('phDsp').innerHTML = data.pH;\n";
+  htmlCode += "                    document.getElementById('tempDsp').innerHTML = data.heat.toFixed(2);\n";
+  htmlCode += "                    document.getElementById('phDsp').innerHTML = data.pH.toFixed(2);\n";
   htmlCode += "                    pumpFlag = data.pump;\n";
   htmlCode += "                    if(data.waterLevel == 0){\n";
   htmlCode += "                        document.getElementById('lvlDsp').innerHTML = 'Low';\n";
@@ -239,8 +239,8 @@ String getHTML(){
   htmlCode += "                    else{\n";
   htmlCode += "                        document.getElementById('pumpDsp').innerHTML = 'ON';\n";
   htmlCode += "                    }\n";
-  htmlCode += "                    document.getElementById('tempProg').value = data.heat - HeatMin;\n";
-  htmlCode += "                    document.getElementById('phProg').value = data.pH - PHMin;\n";
+  htmlCode += "                    document.getElementById('tempProg').value = data.heat.toFixed(2) - HeatMin;\n";
+  htmlCode += "                    document.getElementById('phProg').value = data.pH.toFixed(2) - PHMin;\n";
   htmlCode += "                    var str = '';\n";
   htmlCode += "                    // check temperature status\n";
   htmlCode += "                    if(data.heat > HeatMax){\n";
