@@ -16,3 +16,6 @@ void GetTemp(int voltage, char *tempBuff, char *tempPacket);
 
 // Gets the level then creates a packet to send over
 void GetLevel(int level, char *levelBuff, char *levelPacket);
+
+// Checks if pump is running then creates a string
+void GetPump(int pump, char *pumpBuff, char *pumpPacket);

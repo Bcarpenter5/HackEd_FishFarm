@@ -43,6 +43,9 @@ typedef enum {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Local Prototypes
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+void PrintStats(void);
+void PrintNet(void);
+void PrintPump(void);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Global Variables
@@ -52,13 +55,15 @@ SwState D2, D3, D4;  // Switch states for the buttons controlling the LCD
 
 // char arrays for LCD Strings
 unsigned char pHBuff[40];
-unsigned char tempBuff[40] = "a"; // these two needed to be initialized???
+unsigned char tempBuff[40] = "a"; // these needed to be initialized???
 unsigned char levelBuff[40] = "a";
+unsigned char pumpBuff[40] = "a";
 
 // char arrays for the packets to be sent to the ESP
 unsigned char pHPacket[7];
 unsigned char tempPacket[7];
 unsigned char levelPacket[4];
+unsigned char pumpPacket[4];
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Constants
@@ -78,10 +83,14 @@ void setup() {
   state = Stats; // start the program on the stats screen
   SwState D2, D3, D4 = Idle;  // start the buttons in Idle
 
-  // Set the pins for the buttons to input
+  // Set the pins for the buttons (and level sensor) to input
   pinMode(2, INPUT);
   pinMode(3, INPUT);
   pinMode(4, INPUT);
+  pinMode(5, INPUT);
+
+  // set the pin for the pump to output
+  pinMode(6, OUTPUT);
 
   // Serial set up
   Serial.begin(115200);
@@ -91,18 +100,87 @@ void setup() {
 // main program loop
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 void loop() {
-  // Read from the Sensors
-  GetPH(511, pHBuff, pHPacket);
-  GetTemp(511, tempBuff, tempPacket);
-  GetLevel(1, levelBuff, levelPacket);
+  // Switch process
+  Sw_Process(&D2, 2);
+  Sw_Process(&D3, 3);
+  Sw_Process(&D4, 4);
 
-  Paint_DrawRectangle(2 , 2, LCD_WIDTH -2, LCD_HEIGHT - 2, BLACK, 1, 0);
-  Paint_DrawString_EN(30, 10, pHBuff, &Font24, WHITE, 0x8813);
-  Paint_DrawString_EN(30, 40, tempBuff, &Font24, WHITE, 0x8813);
-  Paint_DrawString_EN(30, 70, levelBuff, &Font24, WHITE, 0x8813);
-  Paint_DrawString_EN(30, 100, "Pump: Runnning", &Font24, WHITE, 0x8813);
+  // Read from the Sensors
+  GetPH(analogRead(phPin), pHBuff, pHPacket);
+  GetTemp(511, tempBuff, tempPacket);
+  GetLevel(digitalRead(5), levelBuff, levelPacket);
+  GetPump(digitalRead(6), pumpBuff, pumpPacket);
+
+  switch(state)
+  {
+    case Stats:
+      PrintStats();
+      break;
+    case Internet:
+      PrintNet();
+      break;
+    case Pump:
+      PrintPump();
+
+      if(D4 == Pressed){
+        digitalTOG(6);
+      }
+
+      break;
+  }
+
+  if(D3 == Pressed){
+      state = (state + 1) % Num;
+      LCD_Clear(0xffff);
+  }
+
+  if(D2 == Pressed){
+     state = (state - 1 + Num) % Num;
+     LCD_Clear(0xffff);
+  }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Functions
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+void PrintStats(void)
+{
+  Paint_DrawRectangle(2 , 2, LCD_WIDTH -2, LCD_HEIGHT - 2, BLACK, 1, 0);
+  Paint_DrawRectangle(100, 10, LCD_WIDTH, 40, WHITE, 1, 1);
+  Paint_DrawString_EN(30, 10, pHBuff, &Font24, WHITE, 0x8813);
+  Paint_DrawRectangle(125, 40, LCD_WIDTH, 70, WHITE, 1, 1);
+  Paint_DrawString_EN(30, 40, tempBuff, &Font24, WHITE, 0x8813);
+  Paint_DrawRectangle(150, 70, LCD_WIDTH, 100, WHITE, 1, 1);
+  Paint_DrawString_EN(30, 70, levelBuff, &Font24, WHITE, 0x8813);
+  Paint_DrawRectangle(135, 100, LCD_WIDTH, 130, WHITE, 1, 1);
+  Paint_DrawString_EN(30, 100, pumpBuff, &Font24, WHITE, 0x8813);
+}
+
+void PrintNet(void)
+{
+  Paint_DrawRectangle(2 , 2, LCD_WIDTH -2, LCD_HEIGHT - 2, BLACK, 1, 0);
+  Paint_DrawString_EN(10, 10, "Network:", &Font24, WHITE, 0x8813);
+  Paint_DrawString_EN(10, 40, "FishFarmNetwork", &Font24, WHITE, 0x8813);
+  Paint_DrawString_EN(10, 100, "Password:", &Font24, WHITE, 0x8813);
+  Paint_DrawString_EN(10, 130, "123456789", &Font24, WHITE, 0x8813);
+  Paint_DrawString_EN(10, 190, "Go to 192.168.1.1", &Font24, WHITE, 0x8813);
+}
+
+void PrintPump(void)
+{
+  Paint_DrawRectangle(2 , 2, LCD_WIDTH -2, LCD_HEIGHT - 2, BLACK, 1, 0);
+  Paint_DrawString_EN(10, 10, "Pump State:", &Font24, WHITE, 0x8813);
+  Paint_DrawRectangle(10, 40, LCD_WIDTH, 70, WHITE, 1, 1);
+
+  if (digitalRead(6))
+  {
+    Paint_DrawString_EN(10, 40, "Running", &Font24, WHITE, 0x8813);
+  }
+  else
+  {
+    Paint_DrawString_EN(10, 40, "Off", &Font24, WHITE, 0x8813);
+  }
+  
+  Paint_DrawString_EN(10, 100, "Press Green button", &Font24, WHITE, 0x8813);
+  Paint_DrawString_EN(10, 130, "to toggle", &Font24, WHITE, 0x8813);
+}
