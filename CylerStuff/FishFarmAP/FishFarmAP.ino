@@ -12,8 +12,8 @@ IPAddress gateway(192,168,1,1);
 IPAddress subnet(255,255,255,0);
 WebServer server(80);
 
-int heat = 111;
-int pH = 222;
+float heat = 111;
+float pH = 222;
 int waterLevel = 333;
 int pump = 0;
 
@@ -62,10 +62,10 @@ void CheckUART() {
       if(data[i] == '\n') {
         switch(data.substring(lastIndex, i-1)[0]) {
           case '1':
-            pH = data.substring(lastIndex+2, i-1).toInt();
+            pH = data.substring(lastIndex+2, i-1).toInt()/100.0;
             break;
           case '2':
-            heat = data.substring(lastIndex+2, i-1).toInt();
+            heat = data.substring(lastIndex+2, i-1).toInt()/100.0;
             break;
           case '3':
             waterLevel = data.substring(lastIndex+2, i-1).toInt();
@@ -82,7 +82,7 @@ void CheckUART() {
 }
 
 String getHTML(){
-  var htmlCode = "";
+  String htmlCode = "";
 
   htmlCode += "<!DOCTYPE html>\n";
   htmlCode += "<html lang='en'>\n";
@@ -212,7 +212,6 @@ String getHTML(){
   htmlCode += "            xhr.send();\n";
   htmlCode += "\n";
   htmlCode += "            fetchData();\n";
-  htmlCode += "            PumpBtnCheck();\n";
   htmlCode += "        };\n";
   htmlCode += "\n";
   htmlCode += "        function fetchData(){\n";
@@ -275,7 +274,6 @@ String getHTML(){
   htmlCode += "            };\n";
   htmlCode += "            // send the request\n";
   htmlCode += "            xhr.send();\n";
-  htmlCode += "            PumpBtnCheck();\n";
   htmlCode += "        };\n";
 
   htmlCode += "        function sendXHR(varName){\n";
@@ -337,14 +335,14 @@ String getHTML(){
   htmlCode += "        function PumpOnHandler(){\n";
   htmlCode += "            // Create an XMLHttpRequest object to turn the pump on\n";
   htmlCode += "            var xhr = new XMLHttpRequest();\n";
-  htmlCode += "            xhr.open('POST', '/pumpOn', true);\n";
+  htmlCode += "            xhr.open('GET', '/pumpOn', true);\n";
   htmlCode += "            xhr.send();\n";
   htmlCode += "        };\n";
 
   htmlCode += "        function PumpOffHandler(){\n";
   htmlCode += "            // Create an XMLHttpRequest object to turn the pump on\n";
   htmlCode += "            var xhr = new XMLHttpRequest();\n";
-  htmlCode += "            xhr.open('POST', '/pumpOff', true);\n";
+  htmlCode += "            xhr.open('GET', '/pumpOff', true);\n";
   htmlCode += "            xhr.send();\n";
   htmlCode += "        };\n";
   htmlCode += "    </script>\n";
