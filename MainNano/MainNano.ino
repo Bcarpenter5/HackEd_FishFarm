@@ -81,7 +81,7 @@ void setup() {
   Paint_Clear(WHITE);
 
   state = Stats; // start the program on the stats screen
-  SwState D2, D3, D4 = Idle;  // start the buttons in Idle
+  D2, D3, D4 = Idle;  // start the buttons in Idle
 
   // Set the pins for the buttons (and level sensor) to input
   pinMode(2, INPUT);
@@ -91,9 +91,6 @@ void setup() {
 
   // set the pin for the pump to output
   pinMode(6, OUTPUT);
-
-  // Serial set up
-  Serial.begin(115200);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
