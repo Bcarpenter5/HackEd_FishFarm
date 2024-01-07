@@ -56,9 +56,9 @@ unsigned char tempBuff[40];
 unsigned char levelBuff[40];
 
 // char arrays for the packets to be sent to the ESP
-unsigned char pHPacket[6];
-unsigned char tempPacket[6];
-unsigned char levelPacket[3];
+unsigned char pHPacket[7];
+unsigned char tempPacket[7];
+unsigned char levelPacket[4];
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Constants
