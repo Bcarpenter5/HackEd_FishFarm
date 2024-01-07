@@ -2,7 +2,7 @@
 #include <WebServer.h>
 #include <ArduinoJson.h>
 
-#define ssid "FishFarmNetwork"
+#define ssid "CylerFishFarmNetwork"
 #define password "123456789"
 #define RXp2 16
 #define TXp2 17
@@ -12,9 +12,9 @@ IPAddress gateway(192,168,1,1);
 IPAddress subnet(255,255,255,0);
 WebServer server(80);
 
-int heat = 0;
-int pH = 0;
-int waterLevel = 0;
+int heat = 111;
+int pH = 222;
+int waterLevel = 333;
 
 
 int heatMax = 0;
@@ -25,6 +25,7 @@ int phMin = 0;
 
 String data;
 uint lastIndex;
+
 void setup() {
   Serial.begin(115200);
   Serial2.begin(9600, SERIAL_8N1, RXp2, TXp2);
@@ -37,10 +38,14 @@ void setup() {
   server.on("/getInitialData", HTTP_GET, handleGetInitialData);
   server.on("/storeNumber", HTTP_GET, handleStoreNumber);
   server.on("/getSensorData", HTTP_GET, handleGetSensorData);
+  server.on("/pumpOn", HTTP_POST, handlePumpOn);
+  server.on("/pumpOff", HTTP_POST, handlePumpOff);
   server.onNotFound(handle_NotFound);
+
   server.begin();
   Serial.println("HTTP Server Started");
 }
+
 void loop() {
   CheckUART();
   server.handleClient();
@@ -72,7 +77,8 @@ void CheckUART() {
 }
 
 String getHTML(){
-  String htmlCode = "<!DOCTYPE html>\n";
+  String htmlCode = "";
+  htmlCode += "<!DOCTYPE html>\n";
   htmlCode += "<html lang='en'>\n";
   htmlCode += "<head>\n";
   htmlCode += "    <meta charset='UTF-8'>\n";
@@ -81,17 +87,25 @@ String getHTML(){
   htmlCode += "</head>\n";
   htmlCode += "<body>\n";
   htmlCode += "    <header>\n";
-  htmlCode += "        <h1>Welcome to fish farm!</h1>\n";
+  htmlCode += "        <h1>Welcome to your fish farm!</h1>\n";
   htmlCode += "    </header>\n";
   htmlCode += "    <main>\n";
   htmlCode += "        <div id='dataDiv'>\n";
   htmlCode += "            <h3>Data</h3>\n";
   htmlCode += "            <section>\n";
-  htmlCode += "                <p>Water Temp: 20°C</p>\n";
-  htmlCode += "                <p>Fish Water pH: 13.7</p>\n";
-  htmlCode += "                <p>Water Level</p>\n";
+  htmlCode += "                <p>Water Temp: <span id='tempDsp'>---</span>°C</p>\n";
+  htmlCode += "                <progress id='tempProg' value='0' max='100'></progress>\n";
+  htmlCode += "                <p>Fish Water pH: <span id='phDsp'>---</span></p>\n";
+  htmlCode += "                <progress id='phProg' value='0' max='100'></progress>\n";
+  htmlCode += "                <p>Water Level: <span id='lvlDsp'>---</span></p>\n";
   htmlCode += "            </section>\n";
   htmlCode += "        </div>\n";
+  htmlCode += "\n";
+  htmlCode += "        <div id='statusDiv'>\n";
+  htmlCode += "            <h3>Status Messages</h3>\n";
+  htmlCode += "            <section id='statusMsgs'></section>\n";
+  htmlCode += "        </div>\n";
+  htmlCode += "\n";
   htmlCode += "        <div id='controlDiv'>\n";
   htmlCode += "            <h3>Control</h3>\n";
   htmlCode += "            <section>\n";
@@ -110,7 +124,11 @@ String getHTML(){
   htmlCode += "                <button id='phMinSubmit' onclick='sendXHR(\"phMin\")'>Submit</button>\n";
   htmlCode += "            </section>\n";
   htmlCode += "        </div>\n";
-  htmlCode += "        <div id='pumpControl'></div>\n";
+  htmlCode += "        <div id='pumpControl'>\n";
+  htmlCode += "            <h3>Pump Control</h3>\n";
+  htmlCode += "            <button type='button' id='pumpOn' onclick='TurnPumpOn()'>ON</button>\n";
+  htmlCode += "            <button type='button' id='pumpOff' onclick='TurnPumpOff()'>OFF</button>\n";
+  htmlCode += "        </div>\n";
   htmlCode += "    </main>\n";
   htmlCode += "\n";
   htmlCode += "    <script>\n";
@@ -118,27 +136,48 @@ String getHTML(){
   htmlCode += "        const interval = setInterval(fetchData, 3000);\n";
   htmlCode += "\n";
   htmlCode += "        // heat and ph max-min variables\n";
-  htmlCode += "        var HeatMax;\n";
-  htmlCode += "        var HeatMin;\n";
-  htmlCode += "        var PHMax;\n";
-  htmlCode += "        var PHMin;\n";
+  htmlCode += "        var HeatMax = 0;\n";
+  htmlCode += "        var HeatMin = 0;\n";
+  htmlCode += "        var PHMax = 0;\n";
+  htmlCode += "        var PHMin = 0;\n";
   htmlCode += "\n";
   htmlCode += "        window.onload = function() {\n";
   htmlCode += "            // create an XMLHttpRequest object to initialize our max and min variables\n";
   htmlCode += "            var xhr = new XMLHttpRequest();\n";
   htmlCode += "            xhr.open('GET', '/getInitialData', true);\n";
-  htmlCode += "            xhr.onreadystatechange = function(){\n";
+  htmlCode += "            xhr.onreadystatechange = function() {\n";
   htmlCode += "                if(xhr.readyState == 4 && xhr.status == 200){\n";
   htmlCode += "                    // data is ready to be used\n";
-  htmlCode += "                    var data = xhr.responseText;\n";
+  htmlCode += "                    var data = JSON.parse(xhr.responseText);\n";
   htmlCode += "                    console.log(data);\n";
+  htmlCode += "                    document.getElementById('tempDsp').innerHTML = data.heat;\n";
+  htmlCode += "                    document.getElementById('phDsp').innerHTML = data.pH;\n";
+  htmlCode += "                    document.getElementById('lvlDsp').innerHTML = data.waterLevel;\n";
+  htmlCode += "\n";
+  htmlCode += "                    document.getElementById('heatMax').placeholder = data.heatMax;\n";
+  htmlCode += "                    document.getElementById('heatMin').placeholder = data.heatMin;\n";
+  htmlCode += "                    document.getElementById('phMax').placeholder = data.phMax;\n";
+  htmlCode += "                    document.getElementById('phMin').placeholder = data.phMin;\n";
+  htmlCode += "\n";
+  htmlCode += "                    HeatMax = data.heatMax;\n";
+  htmlCode += "                    HeatMin = data.heatMin;\n";
+  htmlCode += "                    PHMax = data.phMax;\n";
+  htmlCode += "                    PHMin = data.phMin;\n";
+  htmlCode += "\n";
+  htmlCode += "                    var tempProg = document.getElementById('tempProg');\n";
+  htmlCode += "                    tempProg.max = HeatMax - HeatMin;\n";
+  htmlCode += "                    tempProg.value = data.heat - HeatMin;\n";
+  htmlCode += "\n";
+  htmlCode += "                    var phProg = document.getElementById('phProg');\n";
+  htmlCode += "                    phProg.max = PHMax - PHMin;\n";
+  htmlCode += "                    phProg.value = data.pH - PHMin;\n";
   htmlCode += "                }\n";
   htmlCode += "            };\n";
   htmlCode += "            xhr.send();\n";
   htmlCode += "        };\n";
   htmlCode += "\n";
   htmlCode += "        function fetchData(){\n";
-  htmlCode += "            // create an XMLHttpRequest object to get data\n";
+  htmlCode += "            // create xmlhttprequest object to use to ge7t data\n";
   htmlCode += "            var xhr = new XMLHttpRequest();\n";
   htmlCode += "\n";
   htmlCode += "            // setup the request type and the URL of the req\n";
@@ -148,8 +187,47 @@ String getHTML(){
   htmlCode += "            xhr.onreadystatechange = function(){\n";
   htmlCode += "                if(xhr.readyState == 4 && xhr.status == 200){\n";
   htmlCode += "                    // data is ready to be used\n";
-  htmlCode += "                    var data = xhr.responseText;\n";
-  htmlCode += "                    document.getElementById('pumpControl').innerHTML = data;\n";
+  htmlCode += "                    var data = JSON.parse(xhr.responseText);\n";
+  htmlCode += "                    document.getElementById('tempDsp').innerHTML = data.heat;\n";
+  htmlCode += "                    document.getElementById('phDsp').innerHTML = data.pH;\n";
+  htmlCode += "                    document.getElementById('lvlDsp').innerHTML = data.waterLevel;\n";
+  htmlCode += "\n";
+  htmlCode += "                    document.getElementById('tempProg').value = data.heat - HeatMin;\n";
+  htmlCode += "                    document.getElementById('phProg').value = data.pH - PHMin;\n";
+  htmlCode += "\n";
+  htmlCode += "                    var str = \"\";\n";
+  htmlCode += "\n";
+  htmlCode += "                    // check temperature status\n";
+  htmlCode += "                    if(data.heat > HeatMax){\n";
+  htmlCode += "                        str += \"<p>Water Temperature is too hot!</p>\";\n";
+  htmlCode += "                    }\n";
+  htmlCode += "                    else if(data.heat < HeatMin){\n";
+  htmlCode += "                        str += \"<p>Water Temperature is too cold!</p>\";\n";
+  htmlCode += "                    }\n";
+  htmlCode += "                    else{\n";
+  htmlCode += "                        str += \"<p>Water Temperature is Optimal</p>\";\n";
+  htmlCode += "                    }\n";
+  htmlCode += "\n";
+  htmlCode += "                    // check ph status\n";
+  htmlCode += "                    if(data.pH > PHMax){\n";
+  htmlCode += "                        str += \"<p>pH Level is too high!</p>\";\n";
+  htmlCode += "                    }\n";
+  htmlCode += "                    else if(data.pH < PHMin){\n";
+  htmlCode += "                        str += \"<p>pH Level is too low!</p>\";\n";
+  htmlCode += "                    }\n";
+  htmlCode += "                    else{\n";
+  htmlCode += "                        str += \"<p>pH Level is Optimal</p>\";\n";
+  htmlCode += "                    }\n";
+  htmlCode += "\n";
+  htmlCode += "                    // check water level status\n";
+  htmlCode += "                    if(data.waterLevel == 1){\n";
+  htmlCode += "                        str += \"<p>Water Level is Optimal</p>\";\n";
+  htmlCode += "                    }\n";
+  htmlCode += "                    else{\n";
+  htmlCode += "                        str += \"<p>Water Level Low!</p>\";\n";
+  htmlCode += "                    }\n";
+  htmlCode += "\n";
+  htmlCode += "                    document.getElementById('statusMsgs').innerHTML = str;\n";
   htmlCode += "                }\n";
   htmlCode += "            };\n";
   htmlCode += "\n";
@@ -160,19 +238,76 @@ String getHTML(){
   htmlCode += "        function sendXHR(varName){\n";
   htmlCode += "            // The value that we want to send back to the ESP32\n";
   htmlCode += "            var varVal = document.getElementById(varName).value;\n";
+  htmlCode += "            document.getElementById(varName).value = '';\n";
+  htmlCode += "\n";
+  htmlCode += "            // store the value in the designated variable, check for logic irregularity\n";
+  htmlCode += "            //  with max and min values\n";
+  htmlCode += "            switch(varName){\n";
+  htmlCode += "                case \"heatMax\":\n";
+  htmlCode += "                    HeatMax = varVal;\n";
+  htmlCode += "                    if(HeatMax <= HeatMin){\n";
+  htmlCode += "                        HeatMin = parseInt(HeatMax, 10) - 1;\n";
+  htmlCode += "                    }\n";
+  htmlCode += "                    break;\n";
+  htmlCode += "                case \"heatMin\":\n";
+  htmlCode += "                    HeatMin = varVal;\n";
+  htmlCode += "                    if(HeatMin >= HeatMax){\n";
+  htmlCode += "                        HeatMax = parseInt(HeatMin, 10) + 1;\n";
+  htmlCode += "                    }\n";
+  htmlCode += "                    break;\n";
+  htmlCode += "                case \"phMax\":\n";
+  htmlCode += "                    PHMax = varVal;\n";
+  htmlCode += "                    if(PHMax <= PHMin){\n";
+  htmlCode += "                        PHMin = parseInt(PHMax, 10) - 1;\n";
+  htmlCode += "                    }\n";
+  htmlCode += "                    break;\n";
+  htmlCode += "                case \"phMin\":\n";
+  htmlCode += "                    PHMin = varVal;\n";
+  htmlCode += "                    if(PHMin >= PHMax){\n";
+  htmlCode += "                        PHMax = parseInt(PHMin, 10) + 1;\n";
+  htmlCode += "                    }\n";
+  htmlCode += "                    break;\n";
+  htmlCode += "            }\n";
+  htmlCode += "\n";
+  htmlCode += "            // update the progress bars with the new values\n";
+  htmlCode += "            var tempProg = document.getElementById('tempProg');\n";
+  htmlCode += "            tempProg.max = HeatMax - HeatMin;\n";
+  htmlCode += "            tempProg.value = parseInt(document.getElementById('tempDsp').innerHTML, 10) - HeatMin;\n";
+  htmlCode += "\n";
+  htmlCode += "            var phProg = document.getElementById('phProg');\n";
+  htmlCode += "            phProg.max = PHMax - PHMin;\n";
+  htmlCode += "            phProg.value = parseInt(document.getElementById('phDsp').innerHTML, 10) - PHMin;\n";
+  htmlCode += "\n";
+  htmlCode += "            // set the placeholders for each one in-case of changes\n";
+  htmlCode += "            document.getElementById('heatMax').placeholder = HeatMax;\n";
+  htmlCode += "            document.getElementById('heatMin').placeholder = HeatMin;\n";
+  htmlCode += "            document.getElementById('phMax').placeholder = PHMax;\n";
+  htmlCode += "            document.getElementById('phMin').placeholder = PHMin;\n";
   htmlCode += "\n";
   htmlCode += "            // Create an XMLHttpRequest object\n";
   htmlCode += "            var xhr = new XMLHttpRequest();\n";
   htmlCode += "\n";
   htmlCode += "            // Specify the type of request and the URL\n";
-  htmlCode += "            xhr.open('GET', '/storeNumber?varName='+varName+'&varVal='+varVal, true);\n";
+  htmlCode += "            xhr.open('GET', '/storeNumber?heatMax='+HeatMax+'&heatMin='+HeatMin+'&phMax='+PHMax+'&phMin='+PHMin, true);\n";
   htmlCode += "\n";
   htmlCode += "            // Send the request\n";
   htmlCode += "            xhr.send();\n";
   htmlCode += "        }\n";
+  htmlCode += "        function TurnPumpOn(){\n";
+  htmlCode += "            // Create an XMLHttpRequest object to turn the pump on\n";
+  htmlCode += "            var xhr = new XMLHttpRequest();\n";
+  htmlCode += "            xhr.open('POST', '/pumpOn', true);\n";
+  htmlCode += "            xhr.send();\n";
+  htmlCode += "        }\n\n";
+  htmlCode += "        function TurnPumpOff(){\n";
+  htmlCode += "            // Create an XMLHttpRequest object to turn the pump off\n";
+  htmlCode += "            var xhr = new XMLHttpRequest();\n";
+  htmlCode += "            xhr.open('POST', '/pumpOff', true);\n";
+  htmlCode += "            xhr.send();\n";
+  htmlCode += "        }\n";
   htmlCode += "    </script>\n";
   htmlCode += "</body>\n";
-  htmlCode += "</html>\n";
+  htmlCode += "</html>";
 
 
   return htmlCode;
@@ -200,22 +335,16 @@ void handleGetInitialData(){
 }
 
 void handleStoreNumber(){
-  if(server.hasArg("varVal") && server.hasArg("varName")){
-    int num = server.arg("varVal").toInt();
-    String name = server.arg("varName");
+  if(server.hasArg("heatMax") && server.hasArg("heatMin") && server.hasArg("phMax") && server.hasArg("phMin")){
+    int hmax = server.arg("heatMax").toInt();
+    int hmin = server.arg("heatMin").toInt();
+    int pmax = server.arg("phMax").toInt();
+    int pmin = server.arg("phMin").toInt();
 
-    if(name == "heatMax"){
-      heatMax = num;
-    }
-    else if(name == "heatMin"){
-      heatMin = num;
-    }
-    else if(name == "phMax"){
-      phMax = num;
-    }
-    else if(name == "phMin"){
-      phMin = num;
-    }
+    heatMax = hmax;
+    heatMin = hmin;
+    phMax = pmax;
+    phMin = pmin;
 
     Serial.println("Heat Max: "+String(heatMax)+" || Heat Min: "+String(heatMin)+" || pH Max: "+String(phMax)+" || pH Min: "+String(phMin));
     server.send(200, "text/plain", "Number stored successfully");
@@ -226,7 +355,30 @@ void handleStoreNumber(){
 }
 
 void handleGetSensorData(){
-  server.send(200, "text/plain", String(7806999338));
+  DynamicJsonDocument doc(256);
+  // serialize the object
+  doc["heat"] = heat;
+  doc["pH"] = pH;
+  doc["waterLevel"] = waterLevel;
+
+  heat++;
+  pH++;
+  waterLevel++;
+
+  String jsonData;
+  serializeJson(doc, jsonData);
+
+  server.send(200, "application/json", jsonData);
+}
+
+void handlePumpOn(){
+  //UART CODE TO SEND PUMP ON MESSAGE TO NANO
+  Serial.println("Turning pump on...");
+}
+
+void handlePumpOff(){
+  //UART CODE TO SEND PUMP OFF MESAGE TO NANO
+  Serial.println("Turning pump off...");
 }
 
 void handle_NotFound(){
