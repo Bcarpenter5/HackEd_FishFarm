@@ -52,6 +52,7 @@ void PrintPump(void);
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 State state;         // Will store the state of the LCD screen
 SwState D2, D3, D4;  // Switch states for the buttons controlling the LCD
+SoftwareSerial Serial1(0, 1);
 
 // char arrays for LCD Strings
 unsigned char pHBuff[40];
@@ -64,6 +65,11 @@ unsigned char pHPacket[7];
 unsigned char tempPacket[7];
 unsigned char levelPacket[4];
 unsigned char pumpPacket[4];
+
+String ph = "";
+String temp = "";
+String level = "";
+String pump = "";
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Constants
@@ -91,6 +97,8 @@ void setup() {
 
   // set the pin for the pump to output
   pinMode(6, OUTPUT);
+
+  Serial1.begin(9600);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -107,6 +115,21 @@ void loop() {
   GetTemp(511, tempBuff, tempPacket);
   GetLevel(digitalRead(5), levelBuff, levelPacket);
   GetPump(digitalRead(6), pumpBuff, pumpPacket);
+
+  ph = pHPacket;
+  temp = tempPacket;
+  level = levelPacket;
+  pump = pumpPacket;
+
+  Serial1.println(ph);
+  Serial1.println(temp);
+  Serial1.println(level);
+  Serial1.println(pump);
+
+  ph = "";
+  temp = "";
+  level = "";
+  pump = "";
 
   switch(state)
   {
