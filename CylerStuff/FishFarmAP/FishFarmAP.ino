@@ -4,6 +4,8 @@
 
 #define ssid "FishFarmNetwork"
 #define password "123456789"
+#define RXp2 16
+#define TXp2 17
 
 IPAddress local_ip(192,168,1,1);
 IPAddress gateway(192,168,1,1);
@@ -20,9 +22,12 @@ int heatMin = 0;
 int phMax = 0;
 int phMin = 0;
 
-void setup(){
-  // setup code here to run once
+
+String data;
+uint lastIndex;
+void setup() {
   Serial.begin(115200);
+  Serial2.begin(9600, SERIAL_8N1, RXp2, TXp2);
 
   WiFi.softAP(ssid, password);
   WiFi.softAPConfig(local_ip, gateway, subnet);
@@ -36,10 +41,34 @@ void setup(){
   server.begin();
   Serial.println("HTTP Server Started");
 }
-
-void loop(){
-  //put your main code here, to run repeatedly
+void loop() {
+  CheckUART();
   server.handleClient();
+}
+
+void CheckUART() {
+  if(Serial2.available() > 0) {
+    data = Serial2.readString();
+    lastIndex = 0;
+    
+    for(uint i = 0; i < data.length(); i++) {
+      if(data[i] == '\n') {
+        switch(data.substring(lastIndex, i-1)[0]) {
+          case '1':
+            pH = data.substring(lastIndex+2, i-1).toInt();
+            break;
+          case '2':
+            heat = data.substring(lastIndex+2, i-1).toInt();
+            break;
+          case '3':
+            waterLevel = data.substring(lastIndex+2, i-1).toInt();
+            break;
+        }
+        lastIndex = i + 1;
+      }
+    }
+    lastIndex = 0;
+  }
 }
 
 String getHTML(){
