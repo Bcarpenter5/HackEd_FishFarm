@@ -20,7 +20,7 @@ void GetPH(int voltage, char *pHBuff, char *pHPacket)
     float fPH;
     int iPH;
 
-    fPH = ((float)voltage / 1023.0) * 14.0;
+    fPH = 16.5 - ((float)voltage / 1023.0) * 14.0;
     iPH = (int)(fPH * 100.0);
     (void)sprintf(pHBuff, "pH: %d.%d", iPH / 100, iPH % 100);
     (void)sprintf(pHPacket, "1 %d", iPH);
