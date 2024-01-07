@@ -66,10 +66,13 @@ unsigned char tempPacket[7];
 unsigned char levelPacket[4];
 unsigned char pumpPacket[4];
 
+String data = "";
 String ph = "";
 String temp = "";
 String level = "";
 String pump = "";
+
+int iPump;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Constants
@@ -97,6 +100,7 @@ void setup() {
 
   // set the pin for the pump to output
   pinMode(6, OUTPUT);
+  pinMode(LED_BUILTIN, OUTPUT);
 
   Serial1.begin(9600);
 }
@@ -110,9 +114,30 @@ void loop() {
   Sw_Process(&D3, 3);
   Sw_Process(&D4, 4);
 
+  if(Serial1.available() > 0) {
+    data = Serial1.readString();
+    Serial.print(data);
+    for(int i = 0; i < data.length(); i++) {
+      if(data[i] == '\n') {
+        switch(data.substring(0, i-1)[0]) {
+          case '4':
+            iPump = data.substring(2, i-1).toInt();
+            break;
+        }
+      }
+    }
+  }
+  if(iPump) {
+    digitalWrite(6, HIGH);
+    digitalWrite(LED_BUILTIN, HIGH);
+  } else {
+    digitalWrite(6, LOW);
+    digitalWrite(LED_BUILTIN, LOW);
+  }
+
   // Read from the Sensors
   GetPH(analogRead(phPin), pHBuff, pHPacket);
-  GetTemp(511, tempBuff, tempPacket);
+  GetTemp(analogRead(tempPin), tempBuff, tempPacket);
   GetLevel(digitalRead(5), levelBuff, levelPacket);
   GetPump(digitalRead(6), pumpBuff, pumpPacket);
 
