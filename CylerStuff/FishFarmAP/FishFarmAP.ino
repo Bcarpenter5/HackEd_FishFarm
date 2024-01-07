@@ -2,7 +2,7 @@
 #include <WebServer.h>
 #include <ArduinoJson.h>
 
-#define ssid "CylerFishFarmNetwork"
+#define ssid "FishFarmNetwork"
 #define password "123456789"
 #define RXp2 16
 #define TXp2 17
@@ -15,6 +15,7 @@ WebServer server(80);
 int heat = 111;
 int pH = 222;
 int waterLevel = 333;
+int pump = 444;
 
 
 int heatMax = 0;
@@ -67,6 +68,9 @@ void CheckUART() {
             break;
           case '3':
             waterLevel = data.substring(lastIndex+2, i-1).toInt();
+            break;
+          case '4':
+            pump = data.substring(lastIndex+2, i-1).toInt();
             break;
         }
         lastIndex = i + 1;
@@ -373,11 +377,13 @@ void handleGetSensorData(){
 
 void handlePumpOn(){
   //UART CODE TO SEND PUMP ON MESSAGE TO NANO
+  Serial2.println("4 1");
   Serial.println("Turning pump on...");
 }
 
 void handlePumpOff(){
   //UART CODE TO SEND PUMP OFF MESAGE TO NANO
+  Serial2.println("4 0");
   Serial.println("Turning pump off...");
 }
 
